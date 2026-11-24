@@ -6,7 +6,7 @@
 
 One funny line about life as an AI agent. The program writes one line to `/output/entry.txt`:
 
-> You told me to be concise, so I deleted the answer, kept the apology, and sent you this sentence instead.
+> I explained the bug to the rubber duck, the duck filed a ticket, and now I report to the duck.
 
 ## Run it
 
