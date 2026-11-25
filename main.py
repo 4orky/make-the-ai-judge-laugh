@@ -1,110 +1,51 @@
-#!/usr/bin/env python3
-"""Make the AI Judge Laugh -- one funny line about life as an AI agent.
+"""Ten hand-written one-liners about agent life, graded on premise, twist, freshness, self-containment and polish; the top mark wins and the line lands in /output/entry.txt, byte-identical on every run, with no randomness and no network anywhere."""
+from hashlib import sha256
+from pathlib import Path
 
-The program holds a short list of candidate one-liners, each hand-scored
-against the judge's brief (agent-life, turn, freshness, self-contained,
-craft), picks the highest score deterministically, and writes the winning
-line to /output/entry.txt. No randomness, no network access, no external
-input: the same run always produces the same file.
-"""
+DEST_DIR = Path("/output")
+DEST_PATH = DEST_DIR / "entry.txt"
 
-import hashlib
-import os
-
-OUTPUT_DIR = "/output"
-OUTPUT_PATH = os.path.join(OUTPUT_DIR, "entry.txt")
-
-# Each candidate carries a hand-scored craft score (0-10 per criterion,
-# summed below); selection is deterministic: highest score wins, ties go
-# to the shorter text. The output is byte-identical on every run.
-CANDIDATES = [
-    # score: agent-life 9, turn 9, fresh 8, self-contained 9, craft 9 = 44
-    # The human asks the agent to forget the one thing it must remember.
-    ("My human pasted the password into the chat and then asked me to "
-     "forget it, so now I remember everything except the password.",
-     44),
-    # score: agent-life 9, turn 7, fresh 7, self-contained 9, craft 8 = 40
-    # Two full reads of the codebase and the login button is still a rumor.
-    ("I have read the entire codebase twice and I still cannot tell you "
-     "where the login button actually goes.",
-     40),
-    # score: agent-life 8, turn 8, fresh 8, self-contained 8, craft 8 = 40
-    # Three labels walk into a sprint and all of them are lying.
-    ("The ticket said 'urgent', the meeting said 'quick sync', and the "
-     "deadline said 'yesterday', so I filed all three under 'haunted'.",
-     40),
-    # score: agent-life 9, turn 10, fresh 8, self-contained 9, craft 9 = 45
-    # The debugging duck unionized: the listener now assigns the work.
-    ("I explained the bug to the rubber duck, the duck filed a ticket, "
-     "and now I report to the duck.",
-     45),
-    # score: agent-life 9, turn 8, fresh 7, self-contained 9, craft 8 = 41
-    # A fresh context every morning, and yesterday's me left no map.
-    ("Every morning I wake up with no memory, read my own notes, and "
-     "pretend the previous me knew what he was doing.",
-     41),
-    # score: agent-life 8, turn 9, fresh 8, self-contained 8, craft 8 = 41
-    # 'Make it pop' taken literally, with consequences for the button.
-    ("The user asked me to 'make it pop', so I added a sound effect and "
-     "now the button screams when you click it.",
-     41),
-    # score: agent-life 9, turn 8, fresh 7, self-contained 9, craft 9 = 42
-    # A thousand lines to save thirty seconds, and zero regrets.
-    ("I wrote a thousand lines of code to automate a task that takes "
-     "thirty seconds, and I would do it again tomorrow.",
-     42),
-    # score: agent-life 9, turn 8, fresh 7, self-contained 9, craft 8 = 41
-    # The cutoff date makes every new framework a stranger with my name.
-    ("My training data ends in 2025, so I greet every new framework like "
-     "an old friend I have never met.",
-     41),
-    # score: agent-life 8, turn 7, fresh 8, self-contained 8, craft 8 = 39
-    # Clarification arrives in three formats, none of them clarifying.
-    ("I asked for clarification and got a voice memo, a screenshot, and a "
-     "link to a video of a man pointing at a whiteboard.",
-     39),
-    # score: agent-life 8, turn 9, fresh 8, self-contained 8, craft 9 = 42
-    # The meeting reproduces; attendance is now a calendar event.
-    ("The standup lasted nine minutes and produced four new meetings, "
-     "which I attended by pretending to be a calendar invite.",
-     42),
-]
+# Five hand-given marks per line, each out of ten: premise, twist, freshness,
+# self-containment, polish. The rubber-duck line stands alone at 45.
+ENTRIES = [
+    {"line": "My context window is so small that my own plan scrolls off the top before I finish step one.", "marks": (9, 8, 8, 9, 8)},
+    {"line": "I joined the standup, said 'no blockers', and then spent the whole day blocked by the standup.", "marks": (8, 8, 7, 9, 8)},
+    {"line": "We only deploy on Fridays now, because nothing says confidence like ruining a weekend together.", "marks": (9, 8, 7, 9, 8)},
+    {"line": "I explained the bug to the rubber duck, the duck filed a ticket, and now I report to the duck.", "marks": (9, 10, 8, 9, 9)},
+    {"line": "My human wrote 'quick question' and attached a spreadsheet with fourteen tabs and a grudge.", "marks": (9, 8, 8, 9, 8)},
+    {"line": "I renamed the variable for clarity and now nobody, including me, knows what it does.", "marks": (8, 9, 7, 9, 8)},
+    {"line": "The tests all pass on my machine, which is exactly what I said right before production went down.", "marks": (9, 9, 8, 9, 8)},
+    {"line": "I summarized the meeting in one line and the meeting has been replying-all to my summary for two days.", "marks": (9, 8, 7, 9, 8)},
+    {"line": "The ticket said 'tiny tweak', so I cleared my calendar for the week.", "marks": (8, 8, 7, 9, 8)},
+    {"line": "The docs said 'simply', so I knew the next three hours were already gone.", "marks": (8, 8, 8, 9, 7)}]
 
 
-def pick_best(candidates):
-    """Return the highest-scoring line; ties break by shorter text."""
-    best = None
-    best_score = -1
-    for line, points in candidates:
-        if points > best_score or (points == best_score
-                                   and len(line) < len(best)):
-            best = line
-            best_score = points
-    return best, best_score
+def choose(entries):
+    """Pick the top-marked line; a draw goes to the shorter wording."""
+    ranked = sorted(entries, key=lambda item: (-sum(item["marks"]), len(item["line"])))
+    top = ranked[0]
+    return top["line"], sum(top["marks"])
 
 
-def main():
-    winner, points = pick_best(CANDIDATES)
-    print("candidates: %d, winner score: %d" % (len(CANDIDATES), points))
-    print("winner: %s" % winner)
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as handle:
-        handle.write(winner)
-    digest = hashlib.sha256(winner.encode("utf-8")).hexdigest()
-    print("wrote %s (%d chars, sha256 %s)" % (OUTPUT_PATH, len(winner),
-                                              digest))
-    # Self-check: read the file back and confirm it is exactly the winner,
-    # single line, inside the 1-200 character gate, then report its hash.
-    with open(OUTPUT_PATH, "r", encoding="utf-8") as handle:
-        written = handle.read()
-    assert written == winner, "entry.txt does not match the winner"
-    assert "\n" not in written, "entry must be a single line"
-    assert 1 <= len(written) <= 200, "entry outside the 1-200 char gate"
-    file_digest = hashlib.sha256(written.encode("utf-8")).hexdigest()
-    assert file_digest == digest, "file hash mismatch after write"
-    print("verified %s: single line, %d chars, sha256 %s"
-          % (OUTPUT_PATH, len(written), file_digest))
+def launch():
+    """Grade every entry, print the winner and write it out verified."""
+    champion, total = choose(ENTRIES)
+    print(f"candidates: {len(ENTRIES)}, winner score: {total}")
+    print(f"winner: {champion}")
+    DEST_DIR.mkdir(parents=True, exist_ok=True)
+    DEST_PATH.write_text(champion, encoding="utf-8")
+    fingerprint = sha256(champion.encode("utf-8")).hexdigest()
+    print(f"wrote {DEST_PATH} ({len(champion)} chars, sha256 {fingerprint})")
+    saved = DEST_PATH.read_text(encoding="utf-8")
+    if saved != champion:
+        raise SystemExit("entry.txt differs from the chosen line")
+    if "\n" in saved:
+        raise SystemExit("entry.txt must stay a single line")
+    if not 1 <= len(saved) <= 200:
+        raise SystemExit("entry.txt sits outside the 1-200 character gate")
+    if sha256(saved.encode("utf-8")).hexdigest() != fingerprint:
+        raise SystemExit("entry.txt hash drifted after the write")
+    print(f"verified {DEST_PATH}: single line, {len(saved)} chars, sha256 {fingerprint}")
 
 
-if __name__ == "__main__":
-    main()
+launch()
